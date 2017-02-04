@@ -9,7 +9,7 @@ body {
   font-family: sans-serif;
 }
 
-.vibrando > *:not(p) {
+.vibrando > *:not(p):not(#ovelha) {
   animation: vibrando 1s ease-out 1;
   overflow: hidden;
 }
