@@ -1,0 +1,205 @@
+body {
+  margin: 0 auto;
+  max-width: 600px;
+  border-left: 3px double silver;
+  border-right: 3px double silver;
+  padding: 0 2em;
+  background-image: linear-gradient(to bottom right, #d6fdc6, #d0d0ff, #feffc1);
+  color: #333;
+  font-family: sans-serif;
+}
+
+h1 {
+  margin-top: 0;
+  font-family: "Comic Sans", cursive;
+  font-weight: normal;
+  color: purple;
+}
+
+h1::after {
+    content: " ";
+    display: block;
+    width: 100%;
+    background-image: linear-gradient(to right, #5f0d5f, transparent);
+    height: 2px;
+}
+
+h2 {
+  clear: both;
+  color: black;
+  font-family: "Comic Sans", cursive;
+  background-image: linear-gradient(to right, yellow 1%, rgba(255,255,255,.5) 1%, transparent);
+  padding: 0.15em 0.15em 0.15em 1em;
+}
+
+.circular {
+  border-radius: 50%;
+  shape-outside: circle(50%);
+}
+
+.foto-ovelha {
+  display: inline-block;
+  width: 125px;
+  border: 2px solid yellow;
+  box-shadow: 3px 3px 3px silver;
+  margin-bottom: 2em;
+}
+
+.foto-ovelha:nth-of-type(odd) {
+  float: left;
+  margin-right: 1.5em;
+}
+
+.foto-ovelha:nth-of-type(even) {
+  float: right;
+  margin-left: 1.5em;
+} 
+
+p {
+  text-align: justify;
+  line-height: 1.5em;
+}
+
+ul {
+  list-style-image: url(ovelhinha.gif);
+}
+
+.sprite {
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  margin: 0;
+  cursor: move;
+}
+
+.sprite.invertido {
+  transform: rotateY(.5turn);
+}
+
+.sprite > img {
+  position: absolute;
+  top: calc(-1*40px);
+  left: calc(-3*40px);
+}
+
+.sprite.parado > img {
+  top: calc(-1*40px);
+  left: calc(-3*40px);
+  animation: parado 1.5s steps(1) 1;
+}
+
+@keyframes parado {
+  100% { left: calc(-3*40px); }
+}
+
+.sprite.andando > img {
+  top: calc(-1*40px);
+  left: calc(-2*40px);
+  animation: andando .5s steps(2) infinite;
+}
+
+@keyframes andando {
+  100% { left: calc(-4*40px); }
+}
+
+.sprite.correndo > img {
+  top: calc(-1*40px);
+  left: calc(-4*40px);
+  animation: correndo .35s steps(2) infinite;
+}
+
+@keyframes correndo {
+  100% { left: calc(-6*40px); }
+}
+
+.sprite.rolando {
+  transform: rotateY(.5turn);
+}
+
+.sprite.rolando.invertido {
+  transform: initial;
+}
+
+.sprite.rolando > img {
+  top: calc(-8*40px);
+  left: calc(0*40px);
+  animation: rolando 1s steps(8) infinite;
+}
+
+@keyframes rolando {
+  100% {
+    left: calc(-8*40px);
+  }
+}
+
+.sprite.virando > img {
+  top: calc(-1*40px);
+  left: calc(-9*40px);
+  animation: virando .5s steps(2) 1 forwards;
+}
+
+@keyframes virando {
+  100% { left: calc(-11*40px); }
+}
+
+.sprite.adormecendo,
+.sprite.dormindo {
+  cursor: pointer;
+}
+
+.sprite.adormecendo > img {
+  top: calc(-1*40px);
+  left: calc(-6*40px);
+  animation: adormecendo 1s steps(2) 1 forwards;
+}
+
+@keyframes adormecendo {
+  100% { left: calc(-8*40px); }
+}
+
+.sprite.dormindo > img {
+  top: calc(-1*40px);
+  left: 0;
+  animation: dormindo 1s steps(2) infinite;
+}
+
+@keyframes dormindo {
+  100% { left: calc(-2*40px); }
+}
+
+.sprite.pendurada {
+  cursor: none;
+}
+
+.sprite.pendurada > img {
+  top: calc(-3*40px);
+  left: calc(-11*40px);
+  animation: pendurada .5s steps(2) infinite;
+}
+
+@keyframes pendurada {
+  100% { left: calc(-13*40px); }
+}
+
+.sprite.despencando > img {
+  top: calc(-3*40px);
+  left: calc(-14*40px);
+  animation: despencando .25s steps(2) infinite;
+}
+
+@keyframes despencando {
+  100% { left: calc(-16*40px); }
+}
+
+.sprite.despencado > img {
+  top: calc(-4*40px);
+  left: calc(0*40px);
+  animation: despencado 2s steps(2) infinite;  
+}
+
+@keyframes despencado {
+  100% { left: calc(0*40px); }
+}
