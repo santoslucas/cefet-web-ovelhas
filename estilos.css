@@ -9,6 +9,36 @@ body {
   font-family: sans-serif;
 }
 
+.vibrando > *:not(p) {
+  animation: vibrando 1s ease-out 1;
+  overflow: hidden;
+}
+
+.vibrando > img {
+  animation-delay: .1s;
+}
+
+.vibrando > p {
+  animation: rodando 1s ease-out 1;
+  animation-delay: .05s;
+}
+
+@keyframes vibrando {
+  20% { transform: translateX(3vh); }
+  40% { transform: translateX(-3vh); }
+  60% { transform: translateX(1vh); }
+  80% { transform: translateX(-1vh); }
+  100% { transform: translateX(0.5vh); }
+}
+
+@keyframes rodando {
+  20% { transform: rotateZ(2deg); }
+  40% { transform: rotateZ(-2deg); }
+  60% { transform: rotateZ(1deg); }
+  80% { transform: rotateZ(-1deg); }
+  100% { transform: rotateZ(.02deg); }
+}
+
 h1 {
   margin-top: 0;
   font-family: "Comic Sans", cursive;

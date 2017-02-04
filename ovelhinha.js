@@ -14,6 +14,20 @@ const ESTADOS = {
   despencando: { loop: 'despencando', pos: { anim: 'despencado', duracao: 2000 }, proximo: ['reflexiva']}
 };
 
+const vibraTela = () => {
+  // chama a vibração da bateria, se houver
+  if ('vibrate' in navigator) {
+    navigator.vibrate(1000);
+  }
+
+  // faz os elementos dentro do tela tremerem
+  document.body.classList.add('vibrando');
+  document.body.addEventListener('animationend', function(e) {
+    e.target.removeEventListener(e.type, arguments.callee);
+    document.body.classList.remove('vibrando');
+  });
+};
+
 let ovelha = {
   el: document.querySelector('#ovelha'),
   
@@ -213,6 +227,7 @@ let ovelha = {
         this.velocidadeY -= 0.025;
         if (this.passouDoChao()) {
           this.definePosicao(this.x, this.altura/2);
+          vibraTela();
           this.mudaEstado(this.sorteiaProximoEstado());
         }
         break;        
@@ -230,7 +245,10 @@ let ovelha = {
     let inicializaChacoalho = () => {
       if (typeof window.Shake !== 'undefined') {
         new Shake().start();
-        window.addEventListener('shake', () => this.mudaEstado(ESTADOS.rolando), false);
+        window.addEventListener('shake', () => {
+          this.mudaEstado(ESTADOS.rolando);
+          vibraTela();
+        }, false);
       }
     };
     
