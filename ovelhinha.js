@@ -218,49 +218,63 @@ let ovelha = {
         break;        
     }
     
-    requestAnimationFrame(this.atualiza.bind(this));
+    if (!this.deveParar) {
+      requestAnimationFrame(this.atualiza.bind(this));
+    }
+    this.deveParar = false;
     this.tempoAntes = tempo;
   },
   
   inicializa: function() {
     
-    if (typeof window.Shake !== 'undefined') {
-      new Shake().start();
-      window.addEventListener('shake', () => this.mudaEstado(ESTADOS.rolando), false);
-    }
-    
-    let segurando = false,
-      arrastando = false;
-    this.el.addEventListener('mousedown', () => {
-      segurando = true;
-      arrastando = false;
-    });
-    document.addEventListener('mousemove', (e) => {
-      if (segurando) {
-        arrastando = true;
-        this.definePosicao(
-          window.innerWidth - e.clientX - this.largura/2,
-          window.innerHeight - e.clientY - this.altura/2);
-        this.mudaEstado(ESTADOS.pendurada);
+    let inicializaChacoalho = () => {
+      if (typeof window.Shake !== 'undefined') {
+        new Shake().start();
+        window.addEventListener('shake', () => this.mudaEstado(ESTADOS.rolando), false);
       }
-    });
-    this.el.addEventListener('mouseup', () => {
-        segurando = false;
-        if (!arrastando){
-          // foi feito um clique na ovelha
-          if (this.estado === ESTADOS.dormindo) {
-            this.mudaEstado(ESTADOS.reflexiva);
-          }
-        } else {
-          // a ovelha estava sendo arrastada e acabou de ser solta
-          segurando = false;
-          this.mudaEstado(ESTADOS.despencando);
-        }
+    };
+    
+    let inicializaArraste = () => {
+      let segurando = false,
         arrastando = false;
-    });
+      this.el.addEventListener('mousedown', () => {
+        segurando = true;
+        arrastando = false;
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (segurando) {
+          arrastando = true;
+          this.definePosicao(
+            window.innerWidth - e.clientX - this.largura/2,
+            window.innerHeight - e.clientY - this.altura/2);
+          this.mudaEstado(ESTADOS.pendurada);
+        }
+      });
+      this.el.addEventListener('mouseup', () => {
+          segurando = false;
+          if (!arrastando){
+            // foi feito um clique na ovelha
+            if (this.estado === ESTADOS.dormindo) {
+              this.mudaEstado(ESTADOS.reflexiva);
+            }
+          } else {
+            // a ovelha estava sendo arrastada e acabou de ser solta
+            segurando = false;
+            this.mudaEstado(ESTADOS.despencando);
+          }
+          arrastando = false;
+      });
+    };
     
+    inicializaChacoalho();
+    inicializaArraste();    
     
-    requestAnimationFrame(ovelha.atualiza.bind(ovelha));
+    requestAnimationFrame(this.atualiza.bind(this));
+  },
+  
+  deveParar: false,
+  para: function() {
+    this.deveParar = true;
   }
 };
 
