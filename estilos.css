@@ -17,11 +17,11 @@ h1 {
 }
 
 h1::after {
-    content: " ";
-    display: block;
-    width: 100%;
-    background-image: linear-gradient(to right, #5f0d5f, transparent);
-    height: 2px;
+  content: " ";
+  display: block;
+  width: 100%;
+  background-image: linear-gradient(to right, #5f0d5f, transparent);
+  height: 2px;
 }
 
 h2 {
@@ -42,7 +42,6 @@ h2 {
   width: 125px;
   border: 2px solid yellow;
   box-shadow: 3px 3px 3px silver;
-  margin-bottom: 2em;
 }
 
 .foto-ovelha:nth-of-type(odd) {
