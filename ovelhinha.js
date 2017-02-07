@@ -1,5 +1,3 @@
-
-
 const ANIMACOES = ['parado', 'andando', 'correndo', 'rolando', 'virando', 
   'adormecendo', 'dormindo', 'despencando', 'despencado', 'pendurada'];
 
@@ -12,6 +10,40 @@ const ESTADOS = {
   rolando: { loop: 'rolando', proximo: ['reflexiva', 'dormindo'] },
   pendurada: { loop: 'pendurada', proximo: ['despencando'] },
   despencando: { loop: 'despencando', pos: { anim: 'despencado', duracao: 2000 }, proximo: ['reflexiva']}
+};
+
+const COMANDOS_DE_VOZ = ['parar', 'continuar', 'ovelhita'];
+const gramatica = `#JSGF V1.0; grammar comando; public <comando> = ${COMANDOS_DE_VOZ.join(' | ')} ;`;
+
+const inicializaReconhecimentoDeFala = (callback) => {
+  let prefix = ['', 'webkit', 'moz'];
+  for (let p of prefix) {
+    if (`${p}SpeechRecognition` in window) {
+      prefix = p;
+      break;
+    }
+  }
+    
+  if (!Array.isArray(prefix)) {
+    let reconhecimento = new window[`${prefix}SpeechRecognition`]();
+    let palavrasParaReconhecimento = new window[`${prefix}SpeechGrammarList`]();
+    palavrasParaReconhecimento.addFromString(gramatica, 1);
+    reconhecimento.grammars = palavrasParaReconhecimento;
+    reconhecimento.language = 'pt-BR';
+    reconhecimento.contiuous = true;
+    reconhecimento.interimResults = true;
+    reconhecimento.maxAlternatives = 1;
+    reconhecimento.start();
+    // reconhecimento.addEventListener('result', (e) => {
+    reconhecimento.onresult = (e) => {
+      let ultima = e.results.lenght - 1;
+      let comando = e.results[ultima][0].transcript;
+      if (comando in callback) {
+        callback[comando];
+      }
+    // });
+    };
+  }
 };
 
 const vibraTela = () => {
@@ -28,59 +60,73 @@ const vibraTela = () => {
   });
 };
 
-let ovelha = {
-  el: document.querySelector('#ovelha'),
+
+class Ovelhita {
   
-  // estado inicial
-  estado: ESTADOS.reflexiva,
-  tempoNoEstado: 0,
-  estadosAnteriores: [],
-  orientacao: 1,
+  constructor(x = 20, y = 20) {
+    // dimensões da sprite
+    this.largura = 40;
+    this.altura = 40;
+    // coordenadas que definem a posição do centro da ovelha
+    // usamos um sistema de coordenadas que começa no canto direito inferior
+    this.x = x;
+    this.y = y;
+    
+    // estado inicial
+    this.estado = ESTADOS.reflexiva;
+    this.tempoNoEstado = 0;
+    this.estadosAnteriores = [];
+    // para que lado está olhando (1 ou -1)
+    this.orientacao = 1;  // olhando para a esquerda
+
+    // horário que o último quadro de atualização foi executado
+    this.tempoAntes = 0;    
+    // quando esta flag é ativada, a ovelha interrompe sua atualização
+    this.deveParar = false;
+    
+    // inicializa vibração, eventos e a sprite
+    this.inicializa();
+  }
   
   // define qual animação será tocada
-  defineAnimacao: function(nomeAnimacao) {
+  defineAnimacao(nomeAnimacao) {
     ANIMACOES.forEach((anim) => this.el.classList.remove(anim));
     this.el.classList.add(nomeAnimacao);
-  },
+  }
   
   // define se a ovelha está olhando para esquerda ou direita
-  defineOrientacao: function(novaOrientacao) {
+  defineOrientacao(novaOrientacao) {
     if (novaOrientacao <= 0) {
       this.el.classList.add('invertido');
     } else {
       this.el.classList.remove('invertido');
     }
     this.orientacao = novaOrientacao;
-  },
+  }
   
-  largura: 40,
-  altura: 40,
-  // coordenadas definem a posição do centro da ovelha
-  x: 20,
-  y: 20,
   // sistema de coordenadas começa na direita e embaixo
-  definePosicao: function(x, y) {
+  definePosicao(x, y) {
     this.x = x;
     this.el.style.right = `${x - this.largura/2}px`;
     if (!!y) {
       this.y = y
       this.el.style.bottom = `${y - this.altura/2}px`;
     }
-  },
+  }
   
   // invocada quando quisermos trocar o estado
-  mudaEstado: function(novoEstado) {
+  mudaEstado(novoEstado) {
     // toca animação de loop do estado
-    let tocarAnimLoop = (e) => {
+    let tocarAnimLoop = function(e) {
       if (!!e) {
-        e.target.removeEventListener(e.type, arguments.callee);
+        e.target.removeEventListener(e.type, tocarAnimLoop);
       }
       this.defineAnimacao(novoEstado.loop);
-    };
+    }.bind(this);
     
     let tocarAnimPre = (e) => {
       if (!!e) {
-        e.target.removeEventListener(e.type, arguments.callee);
+        e.target.removeEventListener(e.type, tocarAnimPre);
       }
       // pode haver uma animação de entrada do novo estado (de transição)
       if (typeof novoEstado.pre !== 'undefined') {
@@ -135,21 +181,21 @@ let ovelha = {
     }
     this.estado = novoEstado;
     this.tempoNoEstado = 0;
-  },
+  }
   
-  sorteiaProximoEstado: function() {
+  sorteiaProximoEstado() {
     return ESTADOS[this.estado.proximo[Math.floor(Math.random() * this.estado.proximo.length)]];
-  },
+  }
   
-  bateuNaTela: function() {
+  bateuNaTela() {
     return (this.x - this.largura/2 < 0 || this.x + this.largura/2 > window.innerWidth);
-  },
+  }
   
-  saiuDaTela: function() {
+  saiuDaTela() {
     return (this.x + this.largura/2 < 0 || this.x - this.largura/2 > window.innerWidth);
-  },
+  }
   
-  revolucionaNaTela: function() {
+  revolucionaNaTela() {
     let newX;
     if (this.x - this.largura/2 < 0) {
       newX = this.x + window.innerWidth + this.largura/2;
@@ -157,14 +203,13 @@ let ovelha = {
       newX = -this.largura/2;
     }
     this.definePosicao(newX);    
-  },
+  }
   
-  passouDoChao: function() {
+  passouDoChao() {
     return (this.y - this.altura/2 < 0);
-  },
+  }
   
-  tempoAntes: 0,
-  atualiza: function(tempo) {
+  atualiza(tempo) {
     let delta = tempo - this.tempoAntes;
     this.tempoNoEstado += delta;
     
@@ -238,11 +283,25 @@ let ovelha = {
     }
     this.deveParar = false;
     this.tempoAntes = tempo;
-  },
+  }
   
-  inicializa: function() {
+  inicializa() {
     
-    let inicializaChacoalho = () => {
+    const inicializaSprite = () => {
+      const figureEl = document.createElement('figure');
+      figureEl.classList.add('sprite');
+      figureEl.classList.add('ovelhita');
+      const imgEl = document.createElement('img');
+      imgEl.setAttribute('src', 'ovelhita-spritesheet.png');
+      imgEl.setAttribute('alt', 'Uma ovelha que anda, corre e faz peripécias');
+      imgEl.setAttribute('draggable', 'false');
+      figureEl.appendChild(imgEl);
+      document.body.appendChild(figureEl);
+      this.el = figureEl;
+      this.definePosicao(this.x, this.y);
+    };
+    
+    const inicializaChacoalho = () => {
       if (typeof window.Shake !== 'undefined') {
         new Shake().start();
         window.addEventListener('shake', () => {
@@ -252,7 +311,7 @@ let ovelha = {
       }
     };
     
-    let inicializaArraste = () => {
+    const inicializaArraste = () => {
       let segurando = false,
         arrastando = false;
       this.el.addEventListener('mousedown', () => {
@@ -284,17 +343,45 @@ let ovelha = {
       });
     };
     
+    inicializaSprite();
     inicializaChacoalho();
-    inicializaArraste();    
+    inicializaArraste();
     
     requestAnimationFrame(this.atualiza.bind(this));
-  },
+  }
   
-  deveParar: false,
-  para: function() {
+  para() {
     this.deveParar = true;
+  }
+  
+  continua() {
+    requestAnimationFrame(this.atualiza.bind(this));
   }
 };
 
+class Bando {
+  constructor() {
+    this.ovelhitas = [];
+    inicializaReconhecimentoDeFala({ 
+      ovelhita: this.nova,
+      parar: this.para,
+      continuar: this.continua
+    });
+  }
+  
+  nova() {
+    this.ovelhitas.push(new Ovelhita());
+  }
+  
+  para() {
+    this.ovelhitas.forEach((o) => o.para());
+  }
 
-ovelha.inicializa();
+  continua() {
+    this.ovelhitas.forEach((o) => o.continua());
+  }
+}
+
+
+
+new Bando().nova();
