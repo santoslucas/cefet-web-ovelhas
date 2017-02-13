@@ -91,13 +91,14 @@ const inicializaReconhecimentoDeFala = (callback, microfoneEl) => {
       balaoComando.innerHTML = conteudoBalaoComado.join(' ');
       document.body.appendChild(balaoComando);
     
-      // pára a animação de escuta do microfone      
-      microfoneEl.classList.remove('listening');
+      // som de sucesso      
       EFEITOS_SONOROS['conseguiu-escutar'].play();
     };
     
     reconhecimento.onend = () => {
+      // pára a animação de escuta do microfone
       microfoneEl.classList.remove('listening');
+      document.body.querySelector('#instrucoes').classList.remove('ativa');
     };
 
     reconhecimento.onerror = (e) => {
@@ -110,6 +111,27 @@ const inicializaReconhecimentoDeFala = (callback, microfoneEl) => {
     
     return reconhecimento;
   }  
+};
+
+const INSTRUCOES_ELS = [
+  '➕🐑 ovelha',
+  '🔃 rola',
+  '↪ volta',
+  '🗑 limpa',
+  '✋ para',
+  '▶ continua'
+].map(i => {
+  let instrucaoEl = document.createElement('span');
+  instrucaoEl.className = 'instrucao';
+  instrucaoEl.innerText = i;
+  return instrucaoEl;
+});
+
+const inicializaInstrucoes = () => {
+  let instrucoesEl = document.createElement('aside');
+  instrucoesEl.id = 'instrucoes';
+  INSTRUCOES_ELS.forEach(el => instrucoesEl.appendChild(el));
+  return instrucoesEl;
 };
 
 const inicializaMicrofone = () => {
@@ -126,6 +148,11 @@ const inicializaMicrofone = () => {
   mcMicEl.className = 'mc';
   gnMicEl.appendChild(mcMicEl);
   document.body.appendChild(botaoMicEl);
+  
+  let instrucoesEl = inicializaInstrucoes();
+  document.body.appendChild(instrucoesEl);
+  botaoMicEl.addEventListener('mouseover', e => instrucoesEl.classList.add('ativa'));
+  botaoMicEl.addEventListener('mouseleave', e => instrucoesEl.classList.remove('ativa'));
 };
 
 const vibraTela = () => {
@@ -487,9 +514,11 @@ class Bando {
       
       if (animatedEl.classList.contains('listening')) {
         this.reconhecimento.stop();
+        document.body.querySelector('#instrucoes').classList.remove('ativa');
         animatedEl.classList.remove('listening');
         EFEITOS_SONOROS['cancelou-escuta'].play();
       } else {
+        document.body.querySelector('#instrucoes').classList.add('ativa');
         animatedEl.classList.add('listening');
         EFEITOS_SONOROS['comeca-escutar'].play();
         this.reconhecimento = inicializaReconhecimentoDeFala({
