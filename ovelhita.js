@@ -12,10 +12,26 @@ const ESTADOS = {
   despencando: { loop: 'despencando', pos: { anim: 'despencado', duracao: 2000 }, proximo: ['reflexiva']}
 };
 
-const COMANDOS_DE_VOZ = ['parar', 'continuar', 'ovelhita'];
-const gramatica = `#JSGF V1.0; grammar comando; public <comando> = ${COMANDOS_DE_VOZ.join(' | ')} ;`;
+const EFEITOS_SONOROS = [
+  'comeca-escutar',
+  'conseguiu-escutar',
+  'cancelou-escuta'].reduce((prev, cur) => {
+    prev[cur] = new Audio(`audio/${cur}.mp3`);
+    return prev;
+  }, {});
+  
+const COMANDOS_DE_VOZ = {
+  parar: ['para', 'parar', 'parado', 'parada'],
+  continuar: ['continua', 'continuar', 'continue'],
+  ovelhita: ['ovelha', 'ovelhinha', 'ovelhita'],
+  rolar: ['rola', 'rolar'],
+  voltar: ['volta', 'voltar'],
+  limpar: ['limpa', 'limpar']
+};
 
-const inicializaReconhecimentoDeFala = (callback) => {
+const GRAMATICA = `#JSGF V1.0; grammar comando; public <comando> = ${Object.values(COMANDOS_DE_VOZ).reduce((prev, cur) => prev.concat(cur, [])).join(' | ')} ;`;
+
+const inicializaReconhecimentoDeFala = (callback, microfoneEl) => {
   let prefix = ['', 'webkit', 'moz'];
   for (let p of prefix) {
     if (`${p}SpeechRecognition` in window) {
@@ -27,23 +43,89 @@ const inicializaReconhecimentoDeFala = (callback) => {
   if (!Array.isArray(prefix)) {
     let reconhecimento = new window[`${prefix}SpeechRecognition`]();
     let palavrasParaReconhecimento = new window[`${prefix}SpeechGrammarList`]();
-    palavrasParaReconhecimento.addFromString(gramatica, 1);
+    palavrasParaReconhecimento.addFromString(GRAMATICA, 1);
     reconhecimento.grammars = palavrasParaReconhecimento;
-    reconhecimento.language = 'pt-BR';
-    reconhecimento.contiuous = true;
-    reconhecimento.interimResults = true;
+    reconhecimento.lang = 'pt-BR';
+    reconhecimento.continuous = false;
+    reconhecimento.interimResults = false;
     reconhecimento.maxAlternatives = 1;
     reconhecimento.start();
-    // reconhecimento.addEventListener('result', (e) => {
     reconhecimento.onresult = (e) => {
-      let ultima = e.results.lenght - 1;
-      let comando = e.results[ultima][0].transcript;
-      if (comando in callback) {
-        callback[comando];
+      let ultima = e.results.length - 1;
+      let comandos = e.results[ultima][0].transcript.trim().toLowerCase().split(' ');
+
+      // cria um balão de texto mostrando o que foi falado/reconhecido ou não
+      let balaoComando = document.createElement('output');
+      balaoComando.classList.add('balao-comando');
+      balaoComando.addEventListener('animationend', (e) => {
+        document.body.removeChild(balaoComando)
+      });
+      let conteudoBalaoComado = [];
+      
+      // para cada palavra falada nesta frase...
+      for (let comando of comandos) {
+        let acaoDesteComando = null;
+        
+        for (let c of Object.keys(COMANDOS_DE_VOZ)) {
+          
+          if (COMANDOS_DE_VOZ[c].indexOf(comando) !== -1) {
+            acaoDesteComando = callback[c];
+            // esta palavra foi reconhecida como um comando válido
+            conteudoBalaoComado.push(comando);
+            break;
+          } else {
+            conteudoBalaoComado
+          }
+        }
+        
+        if (acaoDesteComando !== null) {
+          // esta palavra (comando) foi reconhecida
+          acaoDesteComando();
+        } else {
+          // esta palavra (comando) não foi reconhecida
+          conteudoBalaoComado.push(`<span class="desconhecido">${comando}</span>`);
+        }
       }
-    // });
+      
+      // define o conteúdo do balão com os comandos
+      balaoComando.innerHTML = conteudoBalaoComado.join(' ');
+      document.body.appendChild(balaoComando);
+    
+      // pára a animação de escuta do microfone      
+      microfoneEl.classList.remove('listening');
+      EFEITOS_SONOROS['conseguiu-escutar'].play();
     };
-  }
+    
+    reconhecimento.onend = () => {
+      microfoneEl.classList.remove('listening');
+    };
+
+    reconhecimento.onerror = (e) => {
+      reconhecimento.onend();
+      EFEITOS_SONOROS['cancelou-escuta'].play();
+    };
+
+    reconhecimento.onnomatch = reconhecimento.onerror;
+    
+    
+    return reconhecimento;
+  }  
+};
+
+const inicializaMicrofone = () => {
+  let botaoMicEl = document.createElement('button');
+  botaoMicEl.id = 'mic';
+  botaoMicEl.className = 'google-microphone';
+  let sombraMicEl = document.createElement('div');
+  sombraMicEl.className = 'shadow';
+  botaoMicEl.appendChild(sombraMicEl);
+  let gnMicEl = document.createElement('div');
+  gnMicEl.className = 'gn';
+  sombraMicEl.appendChild(gnMicEl);
+  let mcMicEl = document.createElement('div');
+  mcMicEl.className = 'mc';
+  gnMicEl.appendChild(mcMicEl);
+  document.body.appendChild(botaoMicEl);
 };
 
 const vibraTela = () => {
@@ -73,7 +155,7 @@ class Ovelhita {
     this.y = y;
     
     // estado inicial
-    this.estado = ESTADOS.reflexiva;
+    this.estado = this.y > 20 ? ESTADOS.despencando : ESTADOS.reflexiva;
     this.tempoNoEstado = 0;
     this.estadosAnteriores = [];
     // para que lado está olhando (1 ou -1)
@@ -84,8 +166,13 @@ class Ovelhita {
     // quando esta flag é ativada, a ovelha interrompe sua atualização
     this.deveParar = false;
     
+    // força alguns alguns métodos a se ligarem a this para que sejam chamados
+    // via callback
+    this.segueMouse = this.segueMouse.bind(this);
+    this.chacoalha = this.chacoalha.bind(this);
+    
     // inicializa vibração, eventos e a sprite
-    this.inicializa();
+    this.inicializa();    
   }
   
   // define qual animação será tocada
@@ -278,15 +365,16 @@ class Ovelhita {
         break;        
     }
     
-    if (!this.deveParar) {
+    if (!this.deveParar && !this.deveDestruir) {
       requestAnimationFrame(this.atualiza.bind(this));
+    } else if (this.deveDestruir) {
+      this.destroi();
     }
     this.deveParar = false;
     this.tempoAntes = tempo;
   }
   
   inicializa() {
-    
     const inicializaSprite = () => {
       const figureEl = document.createElement('figure');
       figureEl.classList.add('sprite');
@@ -304,42 +392,31 @@ class Ovelhita {
     const inicializaChacoalho = () => {
       if (typeof window.Shake !== 'undefined') {
         new Shake().start();
-        window.addEventListener('shake', () => {
-          this.mudaEstado(ESTADOS.rolando);
-          vibraTela();
-        }, false);
+        window.addEventListener('shake', this.chacoalha, false);
       }
     };
     
     const inicializaArraste = () => {
-      let segurando = false,
-        arrastando = false;
+      this.segurando = false;
+      this.arrastando = false;
       this.el.addEventListener('mousedown', () => {
-        segurando = true;
-        arrastando = false;
+        this.segurando = true;
+        this.arrastando = false;
       });
-      document.addEventListener('mousemove', (e) => {
-        if (segurando) {
-          arrastando = true;
-          this.definePosicao(
-            window.innerWidth - e.clientX - this.largura/2,
-            window.innerHeight - e.clientY - this.altura/2);
-          this.mudaEstado(ESTADOS.pendurada);
-        }
-      });
+      document.addEventListener('mousemove', this.segueMouse);
       this.el.addEventListener('mouseup', () => {
-          segurando = false;
-          if (!arrastando){
+          this.segurando = false;
+          if (!this.arrastando){
             // foi feito um clique na ovelha
             if (this.estado === ESTADOS.dormindo) {
               this.mudaEstado(ESTADOS.reflexiva);
             }
           } else {
             // a ovelha estava sendo arrastada e acabou de ser solta
-            segurando = false;
+            this.segurando = false;
             this.mudaEstado(ESTADOS.despencando);
           }
-          arrastando = false;
+          this.arrastando = false;
       });
     };
     
@@ -347,41 +424,118 @@ class Ovelhita {
     inicializaChacoalho();
     inicializaArraste();
     
+    // faz a transição para o estado inicial
+    this.mudaEstado(this.estado);
+
+    // dá início ao loop de atualização de lógica
     requestAnimationFrame(this.atualiza.bind(this));
   }
   
+  destroi() {
+    document.removeEventListener('mousemove', this.segueMouse);
+    window.removeEventListener('shake', this.chacoalha);
+    this.el.remove();
+  }
+  
+  chacoalha() {
+    this.mudaEstado(ESTADOS.rolando);
+    vibraTela();
+  }
+  
+  segueMouse(e) {
+    if (this.segurando) {
+      this.arrastando = true;
+      this.definePosicao(
+        window.innerWidth - e.clientX - this.largura/2,
+        window.innerHeight - e.clientY - this.altura/2);
+      this.mudaEstado(ESTADOS.pendurada);
+    }    
+  }
+  
   para() {
+    this.el.querySelector('img').style.animationPlayState = 'paused';
     this.deveParar = true;
   }
   
   continua() {
+    this.tempoAntes = performance.now();
+    this.el.querySelector('img').style.animationPlayState = 'running';
     requestAnimationFrame(this.atualiza.bind(this));
+  }
+  
+  rola() {    
+    this.mudaEstado(ESTADOS.rolando);
+  }
+  
+  volta() {
+    this.mudaEstado(ESTADOS.virando);
+  }
+  
+  limpa() {
+    this.deveParar = true;
+    this.deveDestruir = true;
   }
 };
 
 class Bando {
   constructor() {
     this.ovelhitas = [];
-    inicializaReconhecimentoDeFala({ 
-      ovelhita: this.nova,
-      parar: this.para,
-      continuar: this.continua
+    inicializaMicrofone();
+    let microfoneEl = document.querySelector('#mic');
+    microfoneEl.addEventListener('click', e => {
+      const animatedEl = microfoneEl.firstElementChild;
+      
+      if (animatedEl.classList.contains('listening')) {
+        this.reconhecimento.stop();
+        animatedEl.classList.remove('listening');
+        EFEITOS_SONOROS['cancelou-escuta'].play();
+      } else {
+        animatedEl.classList.add('listening');
+        EFEITOS_SONOROS['comeca-escutar'].play();
+        this.reconhecimento = inicializaReconhecimentoDeFala({
+          ovelhita: this.nova.bind(this),
+          parar: this.para.bind(this),
+          continuar: this.continua.bind(this),
+          rolar: this.rola.bind(this),
+          voltar: this.volta.bind(this),
+          limpar: this.limpa.bind(this)
+        }, animatedEl);
+      }
     });
   }
   
   nova() {
-    this.ovelhitas.push(new Ovelhita());
+    let x = Math.random() * (window.innerWidth - 40) + 20;
+    let y = Math.random() < .2 ? Math.random() * (window.innerHeight - 40) + 20 : 0;
+    setTimeout(() => {
+      let nova = new Ovelhita(x, y);
+      this.ovelhitas.push(nova);
+      requestAnimationFrame(() => nova.el.classList.add('surgiu'));
+    }, Math.random() * 350);
   }
   
   para() {
-    this.ovelhitas.forEach((o) => o.para());
+    this.ovelhitas.forEach(o => o.para());
   }
 
   continua() {
-    this.ovelhitas.forEach((o) => o.continua());
+    this.ovelhitas.forEach(o => o.continua());
+  }
+  
+  rola() {
+    this.ovelhitas.forEach(o => o.rola());
+    vibraTela();
+  }
+  
+  volta() {
+    this.ovelhitas.forEach(o => o.volta());
+  }
+  
+  limpa() {
+    while(this.ovelhitas.length > 0) {
+      this.ovelhitas.pop().limpa();
+    }
   }
 }
-
-
 
 new Bando().nova();
