@@ -1,4 +1,8 @@
 /* estilos gerais da página */
+html, body {
+  min-height: 100%;
+}
+
 body {
   margin: 0 auto;
   max-width: 600px;
@@ -53,7 +57,7 @@ h2 {
 .foto-ovelha:nth-of-type(even) {
   float: right;
   margin-left: 1.5em;
-} 
+}
 
 p {
   text-align: justify;
@@ -64,7 +68,7 @@ ul {
   list-style-image: url(imagens/ovelhinha.gif);
 }
 
-/* Estilos da tela vibrando - quando a ovelhinha cai ou o dispositivo 
+/* Estilos da tela vibrando - quando a ovelhinha cai ou o dispositivo
   é chacoalhado */
 .vibrando > *:not(p):not(.ovelhita) {
   animation: vibrando 1s ease-out 1;
@@ -241,7 +245,7 @@ ul {
 .sprite.despencado > img {
   top: calc(-4*40px);
   left: calc(0*40px);
-  animation: despencado 2s steps(2) infinite;  
+  animation: despencado 2s steps(2) infinite;
 }
 
 @keyframes despencado {
@@ -272,7 +276,7 @@ ul {
 }
 
 @keyframes surgindo-de-baixo {
-  from { 
+  from {
     transform: translateY(25%);
     opacity: 0;
   }
@@ -344,12 +348,12 @@ ul {
   font-smoothing: subpixel-antialiased;
 }
 
-@keyframes move_eye { 
-  from { 
+@keyframes move_eye {
+  from {
     transform: scale3d(.75, .75, .75);
-  } to { 
+  } to {
     transform: scale3d(1, 1, 1);
-  }  
+  }
 }
 
 .listening {
